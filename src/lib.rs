@@ -135,14 +135,14 @@ fn write_string_always_trailing<W: Write>(writer: &mut Context<W>, string: &str)
 
 type Properties = indexmap::IndexMap<String, Property>;
 
-fn read_properties_until_none<R: Read + Seek>(reader: &mut Context<R>) -> TResult<Properties> {
+pub fn read_properties_until_none<R: Read + Seek>(reader: &mut Context<R>) -> TResult<Properties> {
     let mut properties = Properties::new();
     while let Some((name, prop)) = read_property(reader)? {
         properties.insert(name, prop);
     }
     Ok(properties)
 }
-fn write_properties_none_terminated<W: Write>(
+pub fn write_properties_none_terminated<W: Write>(
     writer: &mut Context<W>,
     properties: &Properties,
 ) -> TResult<()> {
@@ -153,7 +153,7 @@ fn write_properties_none_terminated<W: Write>(
     Ok(())
 }
 
-fn read_property<R: Read + Seek>(reader: &mut Context<R>) -> TResult<Option<(String, Property)>> {
+pub fn read_property<R: Read + Seek>(reader: &mut Context<R>) -> TResult<Option<(String, Property)>> {
     let name = read_string(reader)?;
     if name == "None" {
         Ok(None)
@@ -251,7 +251,7 @@ impl<'p, 'n> Scope<'p, 'n> {
 }
 
 #[derive(Debug)]
-struct Context<'stream, 'header, 'types, 'scope, S> {
+pub struct Context<'stream, 'header, 'types, 'scope, S> {
     stream: &'stream mut S,
     header: Option<&'header Header>,
     types: &'types Types,
@@ -277,7 +277,7 @@ impl<W: Write> Write for Context<'_, '_, '_, '_, W> {
 }
 
 impl<'stream, 'header, 'types, 'scope, S> Context<'stream, 'header, 'types, 'scope, S> {
-    fn run<F, T>(stream: &'stream mut S, f: F) -> T
+    pub fn run<F, T>(stream: &'stream mut S, f: F) -> T
     where
         F: FnOnce(&mut Context<'stream, '_, '_, 'scope, S>) -> T,
     {
@@ -313,7 +313,7 @@ impl<'stream, 'header, 'types, 'scope, S> Context<'stream, 'header, 'types, 'sco
             },
         })
     }
-    fn header<'h, F, T>(&mut self, header: &'h Header, f: F) -> T
+    pub fn header<'h, F, T>(&mut self, header: &'h Header, f: F) -> T
     where
         F: FnOnce(&mut Context<'_, '_, 'types, '_, S>) -> T,
     {
@@ -362,7 +362,7 @@ impl<'stream, 'header, 'types, 'scope, R: Read + Seek>
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum PropertyType {
     IntProperty,
     Int8Property,
@@ -566,7 +566,7 @@ type Double = f64;
 type Bool = bool;
 type Enum = String;
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MapEntry {
     pub key: PropertyValue,
     pub value: PropertyValue,
@@ -590,7 +590,7 @@ impl MapEntry {
     }
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct FieldPath {
     path: Vec<String>,
     owner: String,
@@ -612,7 +612,7 @@ impl FieldPath {
     }
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Delegate {
     name: String,
     path: String,
@@ -631,7 +631,7 @@ impl Delegate {
     }
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MulticastDelegate(Vec<Delegate>);
 impl MulticastDelegate {
     fn read<R: Read + Seek>(reader: &mut Context<R>) -> TResult<Self> {
@@ -650,7 +650,7 @@ impl MulticastDelegate {
     }
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MulticastInlineDelegate(Vec<Delegate>);
 impl MulticastInlineDelegate {
     fn read<R: Read + Seek>(reader: &mut Context<R>) -> TResult<Self> {
@@ -669,7 +669,7 @@ impl MulticastInlineDelegate {
     }
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MulticastSparseDelegate(Vec<Delegate>);
 impl MulticastSparseDelegate {
     fn read<R: Read + Seek>(reader: &mut Context<R>) -> TResult<Self> {
@@ -688,7 +688,7 @@ impl MulticastSparseDelegate {
     }
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct LinearColor {
     pub r: f32,
     pub g: f32,
@@ -712,7 +712,7 @@ impl LinearColor {
         Ok(())
     }
 }
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Quat {
     pub x: f64,
     pub y: f64,
@@ -752,7 +752,7 @@ impl Quat {
         Ok(())
     }
 }
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Rotator {
     pub x: f64,
     pub y: f64,
@@ -787,7 +787,7 @@ impl Rotator {
         Ok(())
     }
 }
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Color {
     pub r: u8,
     pub g: u8,
@@ -811,7 +811,7 @@ impl Color {
         Ok(())
     }
 }
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Vector {
     pub x: f64,
     pub y: f64,
@@ -846,7 +846,7 @@ impl Vector {
         Ok(())
     }
 }
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Vector2D {
     pub x: f32,
     pub y: f32,
@@ -864,7 +864,7 @@ impl Vector2D {
         Ok(())
     }
 }
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Box {
     pub a: Vector,
     pub b: Vector,
@@ -882,7 +882,7 @@ impl Box {
         Ok(())
     }
 }
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct IntPoint {
     pub x: i32,
     pub y: i32,
@@ -901,7 +901,7 @@ impl IntPoint {
     }
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct GameplayTag {
     pub name: String,
 }
@@ -917,7 +917,7 @@ impl GameplayTag {
     }
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct GameplayTagContainer {
     pub gameplay_tags: Vec<GameplayTag>,
 }
@@ -936,7 +936,7 @@ impl GameplayTagContainer {
     }
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct FFormatArgumentData {
     name: String,
     value: FFormatArgumentDataValue,
@@ -958,7 +958,7 @@ impl<W: Write> Writable<W> for FFormatArgumentData {
 }
 // very similar to FFormatArgumentValue but serializes ints as 32 bits (TODO changes to 64 bit
 // again at some later UE version)
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum FFormatArgumentDataValue {
     Int(i32),
     UInt(u32),
@@ -1015,7 +1015,7 @@ impl<W: Write> Writable<W> for FFormatArgumentDataValue {
     }
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum FFormatArgumentValue {
     Int(i64),
     UInt(u64),
@@ -1073,7 +1073,7 @@ impl<W: Write> Writable<W> for FFormatArgumentValue {
     }
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct FNumberFormattingOptions {
     always_sign: bool,
     use_grouping: bool,
@@ -1109,12 +1109,12 @@ impl<W: Write> Writable<W> for FNumberFormattingOptions {
     }
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Text {
     flags: u32,
     variant: TextVariant,
 }
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum TextVariant {
     // -0x1
     None {
@@ -1267,19 +1267,19 @@ impl<W: Write> Writable<W> for Text {
 }
 
 /// Just a plain byte, or an enum in which case the variant will be a String
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum Byte {
     Byte(u8),
     Label(String),
 }
 /// Vectorized [`Byte`]
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum ByteArray {
     Byte(Vec<u8>),
     Label(Vec<String>),
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum PropertyValue {
     Int(Int),
     Int8(Int8),
@@ -1300,7 +1300,7 @@ pub enum PropertyValue {
     Struct(StructValue),
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum StructValue {
     Guid(uuid::Uuid),
     DateTime(DateTime),
@@ -1320,7 +1320,7 @@ pub enum StructValue {
 }
 
 /// Vectorized properties to avoid storing the variant with each value
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum ValueVec {
     Int8(Vec<Int8>),
     Int16(Vec<Int16>),
@@ -1344,7 +1344,7 @@ pub enum ValueVec {
 }
 
 /// Encapsulates [`ValueVec`] with a special handling of structs. See also: [`ValueSet`]
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum ValueArray {
     Base(ValueVec),
     Struct {
@@ -1356,7 +1356,7 @@ pub enum ValueArray {
     },
 }
 /// Encapsulates [`ValueVec`] with a special handling of structs. See also: [`ValueArray`]
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum ValueSet {
     Base(ValueVec),
     Struct(Vec<StructValue>),
@@ -1739,7 +1739,7 @@ impl ValueSet {
 }
 
 /// Properties consist of an ID and a value and are present in [`Root`] and [`StructValue::Struct`]
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum Property {
     Int8 {
         #[serde(skip_serializing_if = "Option::is_none")]
@@ -2346,7 +2346,7 @@ impl Property {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CustomFormatData {
     pub id: uuid::Uuid,
     pub value: i32,
@@ -2367,13 +2367,13 @@ impl<W: Write> Writable<W> for CustomFormatData {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum PackageVersion {
     Old(u32),
     New(u32, u32),
 }
 
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Header {
     pub magic: u32,
     pub save_game_version: u32,
@@ -2449,7 +2449,7 @@ impl<W: Write> Writable<W> for Header {
 }
 
 /// Root struct inside a save file which holds both the Unreal Engine class name and list of properties
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Root {
     pub save_game_type: String,
     pub properties: Properties,
@@ -2468,7 +2468,7 @@ impl Root {
     }
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Save {
     pub header: Header,
     pub root: Root,
